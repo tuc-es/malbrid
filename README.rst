@@ -1,5 +1,5 @@
 Malbrid - Linear Hybrid System/Automaton Verification Library for Python
-==============================
+========================================================================
 
 The Malbrid library is a Python library for simulating linear hybrid systems modelled as linear linear hybrid automata. 
 
