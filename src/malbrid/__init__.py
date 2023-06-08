@@ -1,3 +1,5 @@
+__version__ = '0.0.7'
+
 from .malbrid import (
   MalbridNumericsException,
   MalbridZenoException,
