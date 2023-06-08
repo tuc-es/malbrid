@@ -19,6 +19,14 @@ While the library is not available to be installed via PyPI, it can be installed
 
 .. code-block:: raw
 
-pip install -e .
+   pip install -e .
 
 
+Getting started
+---------------
+Have a look at the examples in the "examples" directory which run with Jupyter Notebook. They describe a bouncing ball example as well as a ball-with-a-paddle example. The latter also shows how to construct the product of two linear hybrid automata on-the-fly.
+
+
+Notes on Soundness
+------------------
+This examples of the library  contains a couple of checks that test if numerical imprecision during the simulation can cause the wrong discrete transitions to be taken. In such a case, an exception is thrown, and the library contains an exception class so that the respective exception can be caught in your own program.
