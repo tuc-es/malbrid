@@ -18,6 +18,7 @@ Installation
 While the library is not available to be installed via PyPI, it can be installed by checking out the repository and running:
 
 .. code-block:: raw
+
 pip install -e .
 
 
