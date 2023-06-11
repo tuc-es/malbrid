@@ -373,7 +373,7 @@ class ZeroCrossingExpression:
         return ZeroCrossingExpression(LinearExpressionNodeType.SUBTRACTION, ZeroCrossingExpression(LinearExpressionNodeType.CONSTANT, other), self)
 
     def __rsub__(self,other):
-        return ZeroCrossingExpression(LinearExpressionNodeType.SUBTRACTION, self, other)
+        return ZeroCrossingExpression(LinearExpressionNodeType.SUBTRACTION, ZeroCrossingExpression(LinearExpressionNodeType.CONSTANT, other),  self)
 
     def __mul__(self,other):
         if isinstance(other,float) or isinstance(other,int):
@@ -535,10 +535,11 @@ class LinearSystemSimulator:
                     next_time = last_time_before_time_passage + last_time_duration
                     break
 
-            #print("Starting State simulation: ", starting_point)
-            #print("Final state before transition: ",last_point)
-            #print("Simulation duration: ",last_time_duration)
-            #print("Difference:",last_point-starting_point)
+            # print("Starting continuous state simulation: ", starting_point)
+            # print("Discrete state: ",self.discrete_states[-1])
+            # print("Final state before transition: ",last_point)
+            # print("Simulation duration: ",last_time_duration)
+            # print("Difference:",last_point-starting_point)
 
             # ============================================================
             # At this point, we cannot simulate the system further without
