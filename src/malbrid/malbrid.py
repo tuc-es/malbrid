@@ -595,7 +595,8 @@ class LinearSystemSimulator:
                     if (times_to_zero_crossing[0] > 12800*len_last_steps):
                         raise MalbridNumericsException("Numerics error: after exceeding the maximum number of steps of getting closer to the zero crossing due during simulation, the time duration to hit the zero crossing with affine simulation is too high to not issue a numerics error. \nDiscrete State: "+str(self.discrete_states[-1])+" and continuous state: "+str(last_point)+"; time to zero crossing: "+str(times_to_zero_crossing[0])+" and len_last_steps: "+str(len_last_steps))
                 
-                next_point = numpy.matmul(scipy.linalg.expm(times_to_zero_crossing[0] * dynamics), last_point)
+                # print("Extrapolation: ",last_point,times_to_zero_crossing[0] * numpy.matmul(dynamics,last_point))
+                next_point = last_point + times_to_zero_crossing[0] * numpy.matmul(dynamics,last_point)
                 # print("Linear extrapolation: Now at point "+str(next_point)+" with time: "+str(times_to_zero_crossing[0]))
                 next_time = next_time + times_to_zero_crossing[0]
                 self.discrete_states.append(self.discrete_states[-1])

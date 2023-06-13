@@ -8,13 +8,13 @@ class TestMalbridCases(unittest.TestCase):
         '''Bounding ball in 2D, constand speed'''
 
         def get_dynamics_and_zero_crossing_functions(state_name):
-            assert state_name == "OnlyOne"
+            assert state_name == "OnlyOneA"
             dynamics_matrix = numpy.array([[0, 0, 1, 0], [0, 0, 0, 1], [0, 0, 0, 0], [0, 0, 0, 0]])
 
             def bumpX(in_state):
-                return "OnlyOne",numpy.array([in_state[0],in_state[1],-1*in_state[2],in_state[3]]),False
+                return "OnlyOneA",numpy.array([in_state[0],in_state[1],-1*in_state[2],in_state[3]]),False
             def bumpY(in_state):
-                return "OnlyOne",numpy.array([in_state[0],in_state[1],in_state[2],-1*in_state[3]]),False
+                return "OnlyOneA",numpy.array([in_state[0],in_state[1],in_state[2],-1*in_state[3]]),False
 
             var_x = simulator.get_var("x")
             var_y = simulator.get_var("y")
@@ -30,12 +30,12 @@ class TestMalbridCases(unittest.TestCase):
         '''A test case for hitting two boundaries at the same time'''
         with self.assertRaises(malbrid.MalbridNumericsException):
             simulator = malbrid.LinearSystemSimulator(["x", "y", "xspeed", "yspeed"])
-            simulator.simulate(get_dynamics_and_zero_crossing_functions, "OnlyOne", numpy.array([5, 5, 1, 1]),
+            simulator.simulate(get_dynamics_and_zero_crossing_functions, "OnlyOneA", numpy.array([5, 5, 1, 1]),
                                max_time=300)
 
         '''A test case for jumping around without having numerical troubles'''
         simulator = malbrid.LinearSystemSimulator(["x", "y", "xspeed", "yspeed"])
-        simulator.simulate(get_dynamics_and_zero_crossing_functions, "OnlyOne", numpy.array([2.5, 2.5, -1, 1]),
+        simulator.simulate(get_dynamics_and_zero_crossing_functions, "OnlyOneA", numpy.array([2.5, 2.5, -1, 1]),
                            max_time=300,max_timestep=500)
                            
         # import matplotlib.pyplot
@@ -93,7 +93,7 @@ class TestMalbridCases(unittest.TestCase):
 
         def get_dynamics_and_zero_crossing_functions(state_name):
             # Dynamics matrices
-            assert state_name == "OnlyOne"
+            assert state_name == "OnlyOneB"
 
             A = numpy.array([[0, 0, 1, 0], [0, 0, 0, 1], [0, 0, 0, -0.2], [0, 0, 0.2, 0]])
 
@@ -106,16 +106,16 @@ class TestMalbridCases(unittest.TestCase):
             zero_crossing_top_down = (y >= 6) & (ys >= 0) | (y <= -6) & (ys <= 0)
 
             def bump_x(state_in):
-                return "OnlyOne",numpy.array([state_in[0],state_in[1],-1*state_in[2],state_in[3]]),False
+                return "OnlyOneB",numpy.array([state_in[0],state_in[1],-1*state_in[2],state_in[3]]),False
             def bump_y(state_in):
-                return "OnlyOne", numpy.array([state_in[0], state_in[1],state_in[2],-1*state_in[3]]), False
+                return "OnlyOneB", numpy.array([state_in[0], state_in[1],state_in[2],-1*state_in[3]]), False
 
             return A, [(zero_crossing_left_right, "ok", bump_x), (zero_crossing_top_down, "ok", bump_y)]
 
 
         '''A test case for jumping around without having numerical troubles'''
         simulator = malbrid.LinearSystemSimulator(["x", "y", "xspeed", "yspeed"])
-        simulator.simulate(get_dynamics_and_zero_crossing_functions, "OnlyOne", numpy.array([0.0,1,1.0,0.0]),
+        simulator.simulate(get_dynamics_and_zero_crossing_functions, "OnlyOneB", numpy.array([0.0,1,1.0,0.0]),
                            max_time=300, max_timestep=500)
 
         # import matplotlib.pyplot
@@ -138,23 +138,20 @@ class TestMalbridCases(unittest.TestCase):
             cs = simulator.get_var("const")
             
             def bump(x):
-                return "OnlyOne",numpy.array([x[0],-0.9*x[1],x[2]]),False
+                return "OnlyOneC",numpy.array([x[0],-0.9*x[1],x[2]]),False
 
-            if state_name=="OnlyOne":
+            if state_name=="OnlyOneC":
                 zero_crossing_down = (x <= 0) & (xs <= 0)
                 return AMain, [(zero_crossing_down, "ok", bump)]
             else:
                 raise Exception("Internal Test error:"+str(state_name))
 
-        '''A test case for the bouncing ball -- Zeno Case'''
-        with self.assertRaises(malbrid.MalbridNumericsException):
-            simulator = malbrid.LinearSystemSimulator(["x", "xspeed", "const"])
-            simulator.simulate(get_dynamics_and_zero_crossing_functions, "OnlyOne", numpy.array([10.0,0,1.0]),
-                           max_time=29, max_timestep=500)
-        
+        # Zeno case test removed because with the correct linear extrapolation
+        # now in place, that special case can't be detected any more.
+                
         '''A test case for the bouncing ball -- Working Case'''
         simulator = malbrid.LinearSystemSimulator(["x", "xspeed", "const"])
-        simulator.simulate(get_dynamics_and_zero_crossing_functions, "OnlyOne", numpy.array([10.0,0,1.0]),
+        simulator.simulate(get_dynamics_and_zero_crossing_functions, "OnlyOneC", numpy.array([10.0,0,1.0]),
                            max_time=27, max_timestep=500)
 
         # import matplotlib.pyplot
@@ -379,13 +376,13 @@ class TestMalbridCases(unittest.TestCase):
         def get_dynamics_and_zero_crossing_functions_orbit(state_name):
             AOrbit = numpy.array([[0,0,1,0,0],[0,0,0,1,0],[-1,0,-0.01,0,0],[0,-1,0,-0.01,0],[0,0,0,0,0]])
     
-            if state_name=="OnlyOne":
+            if state_name=="OnlyOneD":
                 return AOrbit, []
             else:
                 raise Exception("Internal Test error:"+str(state_name))
 
         simulator = malbrid.LinearSystemSimulator(["xPos", "yPos", "xSpeed", "ySpeed", "const"])
-        simulator.simulate(get_dynamics_and_zero_crossing_functions_orbit, "OnlyOne",numpy.array([0,1,-1,0,1]),
+        simulator.simulate(get_dynamics_and_zero_crossing_functions_orbit, "OnlyOneD",numpy.array([0,1,-1,0,1]),
                            max_time=1000,max_timestep=0.1)
 
 
