@@ -3,7 +3,7 @@
 
 # # Bouncing Ball (not sticking to the surface)
 
-# In[5]:
+# In[1]:
 
 
 # Load packages
@@ -14,7 +14,7 @@ import math
 import malbrid
 
 
-# In[6]:
+# In[2]:
 
 
 def get_dynamics_and_zero_crossing_functions(state_name):
@@ -36,7 +36,7 @@ def get_dynamics_and_zero_crossing_functions(state_name):
  
 
 
-# In[7]:
+# In[3]:
 
 
 simulator = malbrid.LinearSystemSimulator(["x", "xspeed", "const"])
@@ -45,7 +45,7 @@ simulator.simulate(get_dynamics_and_zero_crossing_functions,
                    max_timestep=1,max_time=27)
 
 
-# In[8]:
+# In[4]:
 
 
 matplotlib.pyplot.plot(numpy.array(simulator.time_points)[:],numpy.array(simulator.continuous_states)[:,0])

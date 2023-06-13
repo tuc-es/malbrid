@@ -386,6 +386,37 @@ class TestMalbridCases(unittest.TestCase):
                            max_time=1000,max_timestep=0.1)
 
 
+    def test_rounding_for_inequalities(self):
+    
+      def get_dynamics_and_zero_crossing_functions_orbit(state_name):
+        AOrbit = numpy.array([[0,0,1,0,0],[0,0,0,1,0],[-1,0,-0.01,0,0],[0,-1,0,-0.01,0],[0,0,0,0,0]])
+        AOrbitAcc = numpy.array([[0,0,1,0,0],[0,0,0,1,0],[-1,0,-0.01,0,-0.25],[0,-1,0,-0.01,0],[0,0,0,0,0]])
+    
+        xPos = simulator.get_var("xPos")
+        yPos = simulator.get_var("yPos")
+        xSpeed = simulator.get_var("xSpeed")
+        ySpeed = simulator.get_var("ySpeed")
+        const = simulator.get_var("const")                     
+                         
+        def bumpToAcceleration(x):
+          return "Acceleration",x,False
+        def bumpToNoAcceleration(x):
+          return "NoAcceleration",x,False
+    
+        if state_name=="NoAcceleration":
+          zero_crossing_function = (xPos>-0.5) & (xPos<0.5) & (xSpeed<-0.2)
+          return AOrbit, [(zero_crossing_function,"Switch",bumpToAcceleration)]
+        elif state_name=="Acceleration":
+          zero_crossing_function = (xPos<-0.5001) | (xPos>0.5001) | (xSpeed>-0.1)
+          return AOrbitAcc, [(zero_crossing_function,"Switch",bumpToNoAcceleration)]
+        else:
+          raise Exception("Internal Test error:"+str(state_name))
+
+      simulator = malbrid.LinearSystemSimulator(["xPos", "yPos", "xSpeed", "ySpeed", "const"])
+
+      simulator.simulate(get_dynamics_and_zero_crossing_functions_orbit,
+        "NoAcceleration",numpy.array([0,1,-1,0,1]), max_time=200,max_timestep=0.1)
+
 
 if __name__ == '__main__':
     unittest.main()

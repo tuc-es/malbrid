@@ -272,7 +272,7 @@ class ZeroCrossingBooleanFunction:
             above_fraction = final_constant_right - numpy.dot(starting_point,final_vector_left)
             if above_fraction>0.0:
                 above_fraction = math.nextafter(above_fraction,numpy.inf)
-            else:
+            elif above_fraction<0.0:
                 above_fraction = math.nextafter(above_fraction, -1*numpy.NINF)
             below_fraction = numpy.dot(dynamics,final_vector_left)
             if below_fraction > 0.0:
@@ -282,7 +282,7 @@ class ZeroCrossingBooleanFunction:
             distance = above_fraction/below_fraction
             if (numpy.isnan(distance)):
                 return []
-            if distance<=0.0:
+            if distance<0.0:
                 return [] # The case of satisfying the inequality was already covered
             else:
                 distance = math.nextafter(distance, numpy.inf)
