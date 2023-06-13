@@ -283,7 +283,7 @@ class ZeroCrossingBooleanFunction:
             if (numpy.isnan(distance)):
                 return []
             if distance<=0.0:
-                return [0.0]
+                return [] # The case of satisfying the inequality was already covered
             else:
                 distance = math.nextafter(distance, numpy.inf)
                 return [distance]
@@ -495,7 +495,9 @@ class LinearSystemSimulator:
             #print("Discrete State:",self.discrete_states[-1]) 
             sim_step_steps = []
 
-            while len(sim_step_steps) < self.limit_sim_step_steps:
+            # Simulate for the maximum number of steps for getting closer to a zero crossing.
+            # Ignore the maximum number of steps if there is no zero crossing.
+            while len(sim_step_steps) < self.limit_sim_step_steps or len(zero_crossings)==0:
                 # Compute distance
                 next_distance = max_timestep
                 before_point = last_point
@@ -540,6 +542,7 @@ class LinearSystemSimulator:
             # print("Final state before transition: ",last_point)
             # print("Simulation duration: ",last_time_duration)
             # print("Difference:",last_point-starting_point)
+            # print("#SimSteps before: ",len(sim_step_steps))
 
             # ============================================================
             # At this point, we cannot simulate the system further without
@@ -568,6 +571,7 @@ class LinearSystemSimulator:
             for a, action, b in zero_crossings:
                 zero_crossing_distances.append((a.get_distance(last_point),a,b))
             zero_crossing_distances.sort(key=lambda x:x[0])
+            # print("All zero crossings: ",zero_crossing_distances)
 
             # Test if there is really only one transition that can be taken
             assert len(zero_crossing_distances)>=1
@@ -580,52 +584,44 @@ class LinearSystemSimulator:
             times_to_zero_crossing = list(lowest_zero_crossing[1].find_distances_in_direction_rounded_up(last_point,numpy.matmul(dynamics,last_point)))
             times_to_zero_crossing.sort()
             # print("Times to zero crossing: ",times_to_zero_crossing)
+            
+            # Linear part of the run to zero crossing successful!
+            # Do a discrete transition if that makes sense
+            if len(times_to_zero_crossing)>0:
 
-            # -> Did we find one?
-            if len(times_to_zero_crossing) is None:
-                if self.error_when_distance_to_zero_crossing_cannot_be_computed:
-                    raise MalbridNumericsException("Numerics error: cannot compute difference to zero_crossing when distance to zero crossing is so low that numerically, we cannot simulate any more. \nDiscrete State: "+str(self.discrete_states[-1])," and continuous state: "+str(last_point))
-                else:
-                    # Compute on!
-                    raise Exception("Unimplemented: Computing on...")
-            else:
-                # Linear part of the run to zero crossing successful!
-                # Do a discrete transition if that makes sense
-                if len(times_to_zero_crossing)>0:
+                # Check if the time step of the linear part is big compared to the last simulation steps --> Numerics questionable then!
+                if len(sim_step_steps)>10:
+                    len_last_steps = sim_step_steps[-1] - sim_step_steps[-10]
+                    if (times_to_zero_crossing[0] > 12800*len_last_steps):
+                        raise MalbridNumericsException("Numerics error: after exceeding the maximum number of steps of getting closer to the zero crossing due during simulation, the time duration to hit the zero crossing with affine simulation is too high to not issue a numerics error. \nDiscrete State: "+str(self.discrete_states[-1])+" and continuous state: "+str(last_point)+"; time to zero crossing: "+str(times_to_zero_crossing[0])+" and len_last_steps: "+str(len_last_steps))
+                
+                next_point = numpy.matmul(scipy.linalg.expm(times_to_zero_crossing[0] * dynamics), last_point)
+                # print("Linear extrapolation: Now at point "+str(next_point)+" with time: "+str(times_to_zero_crossing[0]))
+                next_time = next_time + times_to_zero_crossing[0]
+                self.discrete_states.append(self.discrete_states[-1])
+                self.continuous_states.append(next_point)
+                self.time_points.append(next_time)
 
-                    # Check if the time step of the linear part is big compared to the last simulation steps --> Numerics questionable then!
-                    if len(sim_step_steps)>10:
-                        len_last_steps = sim_step_steps[-1] - sim_step_steps[-10]
-                        if (times_to_zero_crossing[0] > 12800*len_last_steps):
-                            raise MalbridNumericsException("Numerics error: after exceeding the maximum number of steps of getting closer to the zero crossing due during simulation, the time duration to hit the zero crossing with affine simulation is too high to not issue a numerics error. \nDiscrete State: "+str(self.discrete_states[-1])+" and continuous state: "+str(last_point)+"; time to zero crossing: "+str(times_to_zero_crossing[0])+" and len_last_steps: "+str(len_last_steps))
-                    
-                    next_point = numpy.matmul(scipy.linalg.expm(times_to_zero_crossing[0] * dynamics), last_point)
-                    # print("Linear extrapolation: Now at point "+str(next_point)+" with time: "+str(times_to_zero_crossing[0]))
-                    next_time = next_time + times_to_zero_crossing[0]
-                    self.discrete_states.append(self.discrete_states[-1])
-                    self.continuous_states.append(next_point)
-                    self.time_points.append(next_time)
+                # Zero crossing found! Check if no_other_zero_crossing_could_have_been_taken
+                if self.check_if_no_other_zero_crossing_could_have_been_taken:
+                    variance_zero_crossing = roundup(roundup(roundup(math.pow(math.exp(expmnorm),times_to_zero_crossing[0]))-rounddown(scipy.linalg.norm(dynamics*times_to_zero_crossing[0],numpy.inf))-1)*roundup(scipy.linalg.norm(state_filter_for_distance_estimation(next_point))))
+                    for dist,a,b in zero_crossing_distances[1:]:
+                        otherDist = a.get_distance(next_point)
+                        # print("CMP ZC: ",otherDist,variance_zero_crossing)
+                        if abs(otherDist-zero_crossing_distances[0][0])<=variance_zero_crossing:
+                            raise MalbridNumericsException(
+                                "Numerics error: Found multiple zero crossing that could have been taken during linear extrapolation. \nDiscrete State: " + str(
+                                    self.discrete_states[-1])+" and continuous state: " + str(last_point)+"\nMain zero crossing function: "+str(zero_crossing_distances[0][1])+"\nOther zero crossing function: "+str(zero_crossing_distances[1][1])+", variance: "+str(variance_zero_crossing)+", local simulation time "+str(times_to_zero_crossing[0])+", global simulation time: "+str(self.time_points[-1]))
 
-                    # Zero crossing found! Check if no_other_zero_crossing_could_have_been_taken
-                    if self.check_if_no_other_zero_crossing_could_have_been_taken:
-                        variance_zero_crossing = roundup(roundup(roundup(math.pow(math.exp(expmnorm),times_to_zero_crossing[0]))-rounddown(scipy.linalg.norm(dynamics*times_to_zero_crossing[0],numpy.inf))-1)*roundup(scipy.linalg.norm(state_filter_for_distance_estimation(next_point))))
-                        for dist,a,b in zero_crossing_distances[1:]:
-                            otherDist = a.get_distance(next_point)
-                            # print("CMP ZC: ",otherDist,variance_zero_crossing)
-                            if abs(otherDist-zero_crossing_distances[0][0])<=variance_zero_crossing:
-                                raise MalbridNumericsException(
-                                    "Numerics error: Found multiple zero crossing that could have been taken during linear extrapolation. \nDiscrete State: " + str(
-                                        self.discrete_states[-1])+" and continuous state: " + str(last_point)+"\nMain zero crossing function: "+str(zero_crossing_distances[0][1])+"\nOther zero crossing function: "+str(zero_crossing_distances[1][1])+", variance: "+str(variance_zero_crossing)+", local simulation time "+str(times_to_zero_crossing[0])+", global simulation time: "+str(self.time_points[-1]))
-
-                    # Execute Zero-Crossing!
-                    # print("Executing zero crossing: ",zero_crossing_distances[0][1])
-                    new_discrete_state,next_point,abort_now = zero_crossing_distances[0][2](next_point)
-                    self.discrete_states.append(new_discrete_state)
-                    self.continuous_states.append(next_point)
-                    self.time_points.append(next_time)
-                    # print("Now in discrete state: ",new_discrete_state)
-                    if abort_now:
-                        return
+                # Execute Zero-Crossing!
+                # print("Executing zero crossing: ",zero_crossing_distances[0][1])
+                new_discrete_state,next_point,abort_now = zero_crossing_distances[0][2](next_point)
+                self.discrete_states.append(new_discrete_state)
+                self.continuous_states.append(next_point)
+                self.time_points.append(next_time)
+                # print("Now in discrete state: ",new_discrete_state)
+                if abort_now:
+                    return
 
             # Potential of zero-time transitions?
             if self.use_simple_zeno_detector:

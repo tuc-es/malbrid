@@ -375,11 +375,26 @@ class TestMalbridCases(unittest.TestCase):
         # matplotlib.pyplot.show()
 
 
+    def test_orbit(self):
+        def get_dynamics_and_zero_crossing_functions_orbit(state_name):
+            AOrbit = numpy.array([[0,0,1,0,0],[0,0,0,1,0],[-1,0,-0.01,0,0],[0,-1,0,-0.01,0],[0,0,0,0,0]])
+    
+            if state_name=="OnlyOne":
+                return AOrbit, []
+            else:
+                raise Exception("Internal Test error:"+str(state_name))
+
+        simulator = malbrid.LinearSystemSimulator(["xPos", "yPos", "xSpeed", "ySpeed", "const"])
+        simulator.simulate(get_dynamics_and_zero_crossing_functions_orbit, "OnlyOne",numpy.array([0,1,-1,0,1]),
+                           max_time=1000,max_timestep=0.1)
+
+
+
 if __name__ == '__main__':
     unittest.main()
     sys.exit(0)
 
     suite = unittest.TestSuite()
-    suite.addTest(TestMalbridCases("test_bouncing_ball_paddle_second_version_product"))
+    suite.addTest(TestMalbridCases("test_orbit"))
     runner = unittest.TextTestRunner()
     runner.run(suite)
