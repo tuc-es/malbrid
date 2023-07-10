@@ -158,3 +158,13 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+/examples/Bouncing_Ball.html
+/examples/DampedOrbit.html
+/examples/DampedOrbitWithOccasionalAcceleration-SlowingDown.html
+/examples/DampedOrbitWithOccasionalAcceleration-SpeedingUp.html
+/examples/DampedOrbitWithOccasionalAcceleration.html
+/examples/Paddle_Ball.html
+/examples/SlightlyRandomizedHeater.html
+/examples/redo_all.sh
+/make.sh
+/test_local_install.sh

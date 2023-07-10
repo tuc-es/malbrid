@@ -499,25 +499,26 @@ class LinearSystemSimulator:
             # Ignore the maximum number of steps if there is no zero crossing.
             while len(sim_step_steps) < self.limit_sim_step_steps or len(zero_crossings)==0:
                 # Compute distance
-                next_distance = max_timestep
+                next_distance = math.inf
                 before_point = last_point
                 last_last_time_duration = last_time_duration
                 for a,action,b in zero_crossings:
                     next_distance = min(next_distance,a.get_distance(last_point))
-                    #print("Next distance function ",a,": ",next_distance, "\t",last_time_duration,file=sys.stderr)
-                if next_distance==numpy.inf:
+                # print("Next distance function ",a,": ",next_distance, "\t",last_time_duration)
+                if (next_distance)==numpy.inf and (max_timestep==numpy.inf):
                     raise Exception("Simulation either needs a zero crossing function or a bounded maximum time step.")
 
                 # How far can we simulate?
                 if next_distance>0:
-                    last_time_duration=math.log(next_distance/numpy.linalg.norm(state_filter_for_distance_estimation(self.continuous_states[-1]),numpy.inf)+1)/math.log(math.exp(expmnorm))+last_time_duration
-                    # print("Computed additional duration: ",math.log(next_distance/numpy.linalg.norm(state_filter_for_distance_estimation(self.continuous_states[-1]),numpy.inf)+1)/math.log(math.exp(expmnorm)))
+                    additional_duration = math.log1p(next_distance/numpy.linalg.norm(state_filter_for_distance_estimation(self.continuous_states[-1]),numpy.inf))/math.log(math.exp(expmnorm))
+                    additional_duration = min(additional_duration,max_timestep)
+                    last_time_duration+=additional_duration
                     sim_step_steps.append(last_time_duration)
                     next_time = last_time_before_time_passage + last_time_duration
                     next_matrix_exponential = scipy.linalg.expm(last_time_duration*dynamics)
                     # print("Next Exponential: ", hashlib.md5(next_matrix_exponential.tobytes()).hexdigest())
                     last_point = numpy.matmul(next_matrix_exponential,starting_point)
-                    #print("Next Last_Point: ", last_point, self.discrete_states[-1])                    
+                    # print("Next Last_Point: ", last_point, self.discrete_states[-1])                    
                     self.discrete_states.append(self.discrete_states[-1])
                     self.continuous_states.append(last_point)
                     self.time_points.append(next_time)
@@ -593,7 +594,11 @@ class LinearSystemSimulator:
                 if len(sim_step_steps)>10:
                     len_last_steps = sim_step_steps[-1] - sim_step_steps[-10]
                     if (times_to_zero_crossing[0] > 12800*len_last_steps):
-                        raise MalbridNumericsException("Numerics error: after exceeding the maximum number of steps of getting closer to the zero crossing due during simulation, the time duration to hit the zero crossing with affine simulation is too high to not issue a numerics error. \nDiscrete State: "+str(self.discrete_states[-1])+" and continuous state: "+str(last_point)+"; time to zero crossing: "+str(times_to_zero_crossing[0])+" and len_last_steps: "+str(len_last_steps))
+                        # Ok, here we have an error. Help a bit
+                        if len(zero_crossing_distances)>1 and (zero_crossing_distances[0][0]==zero_crossing_distances[1][0]):
+                            raise MalbridNumericsException("Numerics error: after exceeding the maximum number of steps of getting closer to the zero crossing due during simulation, the time duration to hit the zero crossing with affine simulation is too high to not issue a numerics error. \nDiscrete State: "+str(self.discrete_states[-1])+" and continuous state: "+str(last_point)+"; time to zero crossing: "+str(times_to_zero_crossing[0])+" -- note that this is most likely due to a wrong zero-crossing function definition as two zero crossing functions are exactly equally apart.")    
+                        else:
+                            raise MalbridNumericsException("Numerics error: after exceeding the maximum number of steps of getting closer to the zero crossing due during simulation, the time duration to hit the zero crossing with affine simulation is too high to not issue a numerics error. \nDiscrete State: "+str(self.discrete_states[-1])+" and continuous state: "+str(last_point)+"; time to zero crossing: "+str(times_to_zero_crossing[0])+" and len_last_steps: "+str(len_last_steps)+" and number of steps: "+str(len(sim_step_steps))+" and zero-crossing distances: "+str(zero_crossing_distances))
                 
                 # print("Extrapolation: ",last_point,times_to_zero_crossing[0] * numpy.matmul(dynamics,last_point))
                 next_point = last_point + times_to_zero_crossing[0] * numpy.matmul(dynamics,last_point)
