@@ -231,7 +231,9 @@ class ZeroCrossingBooleanFunction:
             return math.nextafter(self.operand1.get_value(x) - self.operand2.get_value(x),math.inf)
         if self.type == LinearComparisonNodeType.LT and negated:
             return math.nextafter(self.operand2.get_value(x) - self.operand1.get_value(x), math.inf)
-        if self.type == LinearComparisonNodeType.TRUE:
+        if self.type == LinearComparisonNodeType.TRUE and negated:
+            return math.inf
+        elif self.type == LinearComparisonNodeType.TRUE and not negated:
             return 0
         raise Exception("Unknown case.")
 
@@ -471,6 +473,10 @@ class LinearSystemSimulator:
         self.time_points = [0.0]
         self.discrete_states = [initial_mode]
         self.continuous_states = [initial_var_valuation]
+        
+        # Max Time step needs to be sane
+        if max_timestep==numpy.inf:
+            max_timestep = max_time
 
         # Simulate until the maximum time is reached.
         # To reduce numerical deviations, restart for the whole continuous part of the run of the hybrid system
